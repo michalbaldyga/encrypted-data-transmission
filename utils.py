@@ -8,12 +8,6 @@ import os
 # local key is used just for the PRIVATE KEY
 # use it during creation of the client
 def init_keys(client_id, local_key=None):
-    # hash the password (local key)
-    chosen_hash = hashes.SHA256()
-    hasher = hashes.Hash(chosen_hash)
-    hasher.update(local_key.encode())
-    hash_local_key = hasher.finalize()
-
     # check if are the keys exist if not create them
     try:
         with open('keys/private_key/private_key_' + client_id + '.pem', 'rb') as _private_key, \
@@ -21,7 +15,7 @@ def init_keys(client_id, local_key=None):
 
             _private_key = serialization.load_pem_private_key(
                 _private_key.read(),
-                password=hash_local_key
+                password=local_key
             )
             _public_key = serialization.load_pem_public_key(
                 _public_key.read()
@@ -41,9 +35,9 @@ def init_keys(client_id, local_key=None):
         pem_private_key = _private_key.private_bytes(
             encoding=serialization.Encoding.PEM,
             format=serialization.PrivateFormat.PKCS8,
-            encryption_algorithm=serialization.BestAvailableEncryption(hash_local_key)
+            encryption_algorithm=serialization.BestAvailableEncryption(local_key)
         )
-        with open('private_key_' + client_id + '.pem', 'wb') as f:
+        with open('keys/private_key/private_key_' + client_id + '.pem', 'wb') as f:
             f.write(pem_private_key)
 
         # public key -> password (local_key) not needed, but it is implemented
@@ -51,7 +45,7 @@ def init_keys(client_id, local_key=None):
             encoding=serialization.Encoding.PEM,
             format=serialization.PublicFormat.SubjectPublicKeyInfo,
         )
-        with open('public_key_' + client_id + '.pem', 'wb') as f:
+        with open('keys/public_key/public_key_' + client_id + '.pem', 'wb') as f:
             f.write(pem_public_key)
 
     return _public_key, _private_key
@@ -150,6 +144,36 @@ def decrypt(_private_key, _ciphertext, _session_key, _mode, _iv=None):
 
     with open('decrypted_data/' + file_name, 'wb') as file:
         file.write(byte_data)
+
+
+def hash_local_key(password: str) -> bytes:
+    chosen_hash = hashes.SHA256()
+    hasher = hashes.Hash(chosen_hash)
+    hasher.update(password.encode())
+    hash_password = hasher.finalize()
+    return hash_password
+
+
+def login(client_id: int) -> bytes:
+    # registration/login
+    pass_file = "password/" + str(client_id) + ".txt"
+    file = open(pass_file, "r+b")
+    hash_password = None
+
+    # if there is no password, we add one
+    if os.path.getsize(pass_file) == 0:
+        password = input("Password: ")
+        hash_password = hash_local_key(password)
+        file.write(hash_password)
+    # if there is already password
+    else:
+        password_to_check = file.read()
+        while True:
+            password = input("Password: ")
+            hash_password = hash_local_key(password)
+            if hash_password == password_to_check:
+                break
+    return hash_password
 
 
 # Press the green button in the gutter to run the script.
