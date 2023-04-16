@@ -1,7 +1,5 @@
 import os
 import socket
-import threading
-from message import sending_messages, receiving_messages
 from constants import *
 
 # create the server socket
@@ -18,25 +16,26 @@ print(f"[*] Listening as {HOST}:{PORT}")
 client, address = server.accept()
 print(f"[+] {address} is connected.")
 
-# receive the file infos
-received = client.recv(BUFFER_SIZE).decode()
-filename, filesize = received.split(SEPARATOR)
-
-# remove absolute path if there is
-filename = "new_" + os.path.basename(filename)
-# convert to integer
-filesize = int(filesize)
-
-# start receiving the file from the socket and writing to the file stream
-with open(filename, "wb") as f:
-    while True:
-        # read 1024 bytes from the socket (receive)
-        bytes_read = client.recv(BUFFER_SIZE)
-        if not bytes_read:
-            # nothing is received file transmitting is done
-            break
-        # write to the file the bytes we just received
-        f.write(bytes_read)
-
-client.close()
-server.close()
+while True:
+    eof = False
+    received = client.recv(BUFFER_SIZE).decode()
+    info = received.split(SEPARATOR)
+    if info[0] == MESSAGE_TAG:
+        print(info[1])
+    elif info[0] == FILE_TAG:
+        filename, filesize = info[1], info[2]
+        filename = "new_" + os.path.basename(filename)
+        filesize = int(filesize)
+        # start receiving the file from the socket and writing to the file stream
+        with open(filename, "wb") as f:
+            while True:
+                # read 1024 bytes from the socket (receive)
+                bytes_read = client.recv(BUFFER_SIZE)
+                if bytes_read.endswith(b"<END>"):
+                    eof = True
+                if eof:
+                    f.write(bytes_read[:-5])
+                    f.flush()
+                    break
+                else:
+                    f.write(bytes_read)
