@@ -5,3 +5,4 @@ SEPARATOR = "<SEPARATOR>"   # SEPARATOR to separate the data fields
 MESSAGE_TAG = "<MSG>"
 FILE_TAG = "<FILE>"
 END_TAG = "<END>"
+PUBLIC_KEY = "<PUBLIC_KEY>"
