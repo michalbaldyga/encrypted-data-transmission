@@ -1,6 +1,7 @@
 import os
 import socket
-from constants import *
+from constants import HOST, PORT, BUFFER_SIZE, MESSAGE_TAG, SEPARATOR, FILE_TAG
+from message import recv_file
 
 # create the server socket
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -16,26 +17,15 @@ print(f"[*] Listening as {HOST}:{PORT}")
 client, address = server.accept()
 print(f"[+] {address} is connected.")
 
+# start receiving data from the socket
 while True:
-    eof = False
     received = client.recv(BUFFER_SIZE).decode()
-    info = received.split(SEPARATOR)
-    if info[0] == MESSAGE_TAG:
-        print(info[1])
-    elif info[0] == FILE_TAG:
-        filename, filesize = info[1], info[2]
-        filename = "new_" + os.path.basename(filename)
-        filesize = int(filesize)
-        # start receiving the file from the socket and writing to the file stream
-        with open(filename, "wb") as f:
-            while True:
-                # read 1024 bytes from the socket (receive)
-                bytes_read = client.recv(BUFFER_SIZE)
-                if bytes_read.endswith(b"<END>"):
-                    eof = True
-                if eof:
-                    f.write(bytes_read[:-5])
-                    f.flush()
-                    break
-                else:
-                    f.write(bytes_read)
+    data_info = received.split(SEPARATOR)
+    # recv message
+    if data_info[0] == MESSAGE_TAG:
+        print("Message: " + data_info[1])
+    # recv file
+    elif data_info[0] == FILE_TAG:
+        filename = "./new_files/" + os.path.basename(data_info[1])
+        filesize = int(data_info[2])
+        recv_file(filename, filesize, client)
