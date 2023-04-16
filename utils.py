@@ -1,5 +1,5 @@
 from cryptography.hazmat.primitives import padding, serialization, hashes
-from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 import os
 
@@ -20,12 +20,11 @@ def init_keys(client_id, local_key=None):
                 open('keys/public_key/public_key_' + client_id + '.pem', 'rb') as _public_key:
 
             _private_key = serialization.load_pem_private_key(
-                private_key.read(),
-                password=hash_local_key.encode()
+                _private_key.read(),
+                password=hash_local_key
             )
             _public_key = serialization.load_pem_public_key(
-                public_key.read(),
-                password=hash_local_key.encode()
+                _public_key.read()
             )
 
     except FileNotFoundError:
@@ -34,24 +33,23 @@ def init_keys(client_id, local_key=None):
             public_exponent=65537,
             key_size=2048,
         )
-        _public_key = private_key.public_key()
+        _public_key = _private_key.public_key()
 
         # Serialize (changing the format) to store RSA keys
 
         # private key -> password (local_key) needed
-        pem_private_key = private_key.private_bytes(
+        pem_private_key = _private_key.private_bytes(
             encoding=serialization.Encoding.PEM,
             format=serialization.PrivateFormat.PKCS8,
-            encryption_algorithm=serialization.BestAvailableEncryption(hash_local_key.encode())
+            encryption_algorithm=serialization.BestAvailableEncryption(hash_local_key)
         )
         with open('private_key_' + client_id + '.pem', 'wb') as f:
             f.write(pem_private_key)
 
         # public key -> password (local_key) not needed, but it is implemented
-        pem_public_key = public_key.public_bytes(
+        pem_public_key = _public_key.public_bytes(
             encoding=serialization.Encoding.PEM,
-            format=serialization.PrivateFormat.PKCS8,
-            encryption_algorithm=serialization.BestAvailableEncryption(hash_local_key.encode())
+            format=serialization.PublicFormat.SubjectPublicKeyInfo,
         )
         with open('public_key_' + client_id + '.pem', 'wb') as f:
             f.write(pem_public_key)
@@ -84,7 +82,7 @@ def encrypt(_public_key, data, _mode):
 
     # place for encryption a session_key by rsa public_key
     _session_key = _public_key.encrypt(
-        _session_key,
+        _session_key.decode(),
         padding.OAEP(
             mgf=padding.MGF1(algorithm=hashes.SHA256()),
             algorithm=hashes.SHA256(),
@@ -92,7 +90,7 @@ def encrypt(_public_key, data, _mode):
         )
     )
     _mode = _public_key.encrypt(
-        _mode.encode(),
+        _mode.decode(),
         padding.OAEP(
             mgf=padding.MGF1(algorithm=hashes.SHA256()),
             algorithm=hashes.SHA256(),
@@ -100,7 +98,7 @@ def encrypt(_public_key, data, _mode):
         )
     )
     _iv = _public_key.encrypt(
-        _iv.encode(),
+        _iv.decode(),
         padding.OAEP(
             mgf=padding.MGF1(algorithm=hashes.SHA256()),
             algorithm=hashes.SHA256(),
@@ -162,7 +160,6 @@ if __name__ == '__main__':
             with open('sended_data/' + file_name, 'rb') as f:
                 byte_file = f.read()
                 # second arg pass by user
-                public_key = "kutas"
-                private_key = "sekretny kutas"
+                public_key, private_key = init_keys(12345, None)
                 iv, ciphertext, session_key, mode = encrypt(public_key, byte_file, "ECB")
                 decrypt(private_key, ciphertext, session_key, mode, iv)
