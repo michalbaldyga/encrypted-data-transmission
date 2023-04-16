@@ -1,5 +1,6 @@
 import socket
-from constants import BUFFER_SIZE, END_TAG
+import os
+from constants import *
 
 
 def recv_file(filename: str, filesize: int, conn: socket.socket):
@@ -27,3 +28,46 @@ def send_file(filename: str, filesize: int, conn: socket.socket):
                 break
             conn.sendall(bytes_read)
     conn.send("<END>".encode())
+
+
+def send(client: socket.socket):
+    while True:
+        option = input("1.Send message\n2.Send file\n3.Exit\nChoose option: ")
+
+        # send message
+        if option == "1":
+            message = input("Message: ")
+            client.send(f"{MESSAGE_TAG}{SEPARATOR}{message}".encode())
+
+        # send file
+        elif option == "2":
+            # send the filename and filesize
+            filename = input("Filename: ")
+            filesize = os.path.getsize(filename)
+            client.send(f"{FILE_TAG}{SEPARATOR}{filename}{SEPARATOR}{filesize}".encode())
+            send_file(filename, filesize, client)
+
+        # exit
+        else:
+            client.close()
+            break
+
+
+def recv(client: socket.socket, addr):
+    # start receiving data from the socket
+    with open("logs.txt", "a") as f:
+        while True:
+            received = client.recv(BUFFER_SIZE).decode()
+            data_info = received.split(SEPARATOR)
+            # recv message
+            if data_info[0] == MESSAGE_TAG:
+                # print("Message: " + data_info[1])
+                f.write(f"New message from {addr}: " + data_info[1] + "\n")
+                f.flush()
+            # recv file
+            elif data_info[0] == FILE_TAG:
+                f.write(f"New file from {addr}: " + data_info[1])
+                f.flush()
+                filename = "./new_files/" + os.path.basename(data_info[1])
+                filesize = int(data_info[2])
+                recv_file(filename, filesize, client)
