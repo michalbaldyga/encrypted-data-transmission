@@ -1,6 +1,6 @@
 import os
 
-from cryptography import hash_local_key
+from crypto import hash_local_key
 
 
 def login(client_id: int) -> bytes:

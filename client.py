@@ -1,7 +1,7 @@
 import socket
 import threading
 from constants import HOST, PORT, PORT2
-from cryptography import assign_rsa_keys
+from crypto import assign_rsa_keys
 from message import send, recv
 from utils import login
 
@@ -21,12 +21,6 @@ hash_password = login(PORT2)
 
 # generate public and private key
 public_key, private_key = assign_rsa_keys(str(PORT2), hash_password)
-
-# send public key to other user
-# client.send(public_key.encode())
-
-# recv other user public key
-# received_key = client.recv(BUFFER_SIZE).decode()
 
 threading.Thread(target=send, args=(client,)).start()
 threading.Thread(target=recv(client, PORT, PORT2), args=(client,)).start()
