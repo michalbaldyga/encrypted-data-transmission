@@ -1,8 +1,9 @@
 import threading
 import socket
-from constants import HOST, PORT, BUFFER_SIZE, MESSAGE_TAG, SEPARATOR, FILE_TAG, PUBLIC_KEY, PORT2
+from constants import HOST, PORT, PORT2
+from cryptography import assign_rsa_keys
 from message import send, recv
-from utils import init_keys, login
+from utils import login
 
 # create the server socket
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -21,8 +22,8 @@ print(f"[+] {address} is connected.")
 # login/registration
 hash_password = login(PORT)
 
-# generate public and private key
-public_key, private_key = init_keys(str(PORT), hash_password)
+public_key, private_key = assign_rsa_keys(str(PORT), hash_password)
+
 
 # send public key to other user
 # client.send(public_key.encode())

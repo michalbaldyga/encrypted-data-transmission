@@ -1,9 +1,11 @@
-HOST = "127.0.0.1"          # Standard loopback interface address (localhost)
-PORT = 65432                # Port to listen on
+HOST = "127.0.0.1"  # Standard loopback interface address (localhost)
+PORT = 65432  # Port to listen on
 PORT2 = 23456
-BUFFER_SIZE = 4096          # Send 4096 bytes each time step
-SEPARATOR = "<SEPARATOR>"   # SEPARATOR to separate the data fields
+BUFFER_SIZE = 4096  # Send 4096 bytes each time step
+SEPARATOR = "<SEPARATOR>"  # SEPARATOR to separate the data fields
 MESSAGE_TAG = "<MSG>"
 FILE_TAG = "<FILE>"
 END_TAG = "<END>"
 PUBLIC_KEY = "<PUBLIC_KEY>"
+PATH_TO_PRIVATE_KEY = "/keys/private_key/private_key.pem"
+PATH_TO_PUBLIC_KEY = "/keys/public_key/public_key.pem"

@@ -1,10 +1,9 @@
 import socket
 import threading
-import os
-from cryptography.hazmat.primitives import hashes
-from constants import HOST, PORT, SEPARATOR, PUBLIC_KEY, PORT2, BUFFER_SIZE
+from constants import HOST, PORT, PORT2
+from cryptography import assign_rsa_keys
 from message import send, recv
-from utils import init_keys, login
+from utils import login
 
 # create the client socket
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -21,7 +20,7 @@ print("[+] Connected.")
 hash_password = login(PORT2)
 
 # generate public and private key
-public_key, private_key = init_keys(str(PORT2), hash_password)
+public_key, private_key = assign_rsa_keys(str(PORT2), hash_password)
 
 # send public key to other user
 # client.send(public_key.encode())
