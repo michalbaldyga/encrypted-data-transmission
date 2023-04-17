@@ -1,6 +1,6 @@
 import threading
 import socket
-from constants import HOST, PORT, BUFFER_SIZE, MESSAGE_TAG, SEPARATOR, FILE_TAG, PUBLIC_KEY
+from constants import HOST, PORT, BUFFER_SIZE, MESSAGE_TAG, SEPARATOR, FILE_TAG, PUBLIC_KEY, PORT2
 from message import send, recv
 from utils import init_keys, login
 
@@ -25,10 +25,10 @@ hash_password = login(PORT)
 public_key, private_key = init_keys(str(PORT), hash_password)
 
 # send public key to other user
-client.send(public_key.encode())
+# client.send(public_key.encode())
 
 # recv other user public key
-received_key = client.recv(BUFFER_SIZE).decode()
+# received_key = client.recv(BUFFER_SIZE).decode()
 
 threading.Thread(target=send, args=(client,)).start()
-threading.Thread(target=recv(client, address), args=(client,)).start()
+threading.Thread(target=recv(client, PORT2, PORT), args=(client,)).start()

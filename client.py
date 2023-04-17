@@ -24,10 +24,10 @@ hash_password = login(PORT2)
 public_key, private_key = init_keys(str(PORT2), hash_password)
 
 # send public key to other user
-client.send(public_key.encode())
+# client.send(public_key.encode())
 
 # recv other user public key
-received_key = client.recv(BUFFER_SIZE).decode()
+# received_key = client.recv(BUFFER_SIZE).decode()
 
 threading.Thread(target=send, args=(client,)).start()
-threading.Thread(target=recv(client, (HOST, PORT)), args=(client,)).start()
+threading.Thread(target=recv(client, PORT, PORT2), args=(client,)).start()

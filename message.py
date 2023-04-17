@@ -53,21 +53,21 @@ def send(client: socket.socket):
             break
 
 
-def recv(client: socket.socket, addr):
+def recv(client: socket.socket, sender_addr, receiver_addr):
     # start receiving data from the socket
-    with open("logs.txt", "a") as f:
+    with open(f"./{receiver_addr}/recv/logs.txt", "a") as f:
         while True:
             received = client.recv(BUFFER_SIZE).decode()
             data_info = received.split(SEPARATOR)
             # recv message
             if data_info[0] == MESSAGE_TAG:
                 # print("Message: " + data_info[1])
-                f.write(f"New message from {addr}: " + data_info[1] + "\n")
+                f.write(f"New message from {sender_addr}: " + data_info[1] + "\n")
                 f.flush()
             # recv file
             elif data_info[0] == FILE_TAG:
-                f.write(f"New file from {addr}: " + data_info[1])
+                f.write(f"New file from {sender_addr}: " + data_info[1])
                 f.flush()
-                filename = "./new_files/" + os.path.basename(data_info[1])
+                filename = f"./{receiver_addr}/recv/files/{os.path.basename(data_info[1])}"
                 filesize = int(data_info[2])
                 recv_file(filename, filesize, client)

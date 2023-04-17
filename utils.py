@@ -10,8 +10,8 @@ import os
 def init_keys(client_id, local_key=None):
     # check if are the keys exist if not create them
     try:
-        with open('keys/private_key/private_key_' + client_id + '.pem', 'rb') as _private_key, \
-                open('keys/public_key/public_key_' + client_id + '.pem', 'rb') as _public_key:
+        with open(client_id + '/keys/private_key/private_key.pem', 'rb') as _private_key, \
+                open(client_id + '/keys/private_key/private_key.pem', 'rb') as _public_key:
 
             _private_key = serialization.load_pem_private_key(
                 _private_key.read(),
@@ -37,7 +37,7 @@ def init_keys(client_id, local_key=None):
             format=serialization.PrivateFormat.PKCS8,
             encryption_algorithm=serialization.BestAvailableEncryption(local_key)
         )
-        with open('keys/private_key/private_key_' + client_id + '.pem', 'wb') as f:
+        with open(client_id + '/keys/private_key/private_key.pem', 'wb') as f:
             f.write(pem_private_key)
 
         # public key -> password (local_key) not needed, but it is implemented
@@ -45,7 +45,7 @@ def init_keys(client_id, local_key=None):
             encoding=serialization.Encoding.PEM,
             format=serialization.PublicFormat.SubjectPublicKeyInfo,
         )
-        with open('keys/public_key/public_key_' + client_id + '.pem', 'wb') as f:
+        with open(client_id + '/keys/public_key/public_key.pem', 'wb') as f:
             f.write(pem_public_key)
 
     return _public_key, _private_key
@@ -156,7 +156,7 @@ def hash_local_key(password: str) -> bytes:
 
 def login(client_id: int) -> bytes:
     # registration/login
-    pass_file = "password/" + str(client_id) + ".txt"
+    pass_file = str(client_id) + "/keys/local_key/local_key.txt"
     file = open(pass_file, "r+b")
     hash_password = None
 
