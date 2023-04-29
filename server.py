@@ -1,7 +1,7 @@
 import threading
 import socket
 from constants import HOST, PORT, PORT2
-from crypto import assign_rsa_keys
+from crypto import assign_rsa_keys, send_public_key, recv_public_key
 from message import send, recv
 from utils import login
 
@@ -23,7 +23,11 @@ print(f"[+] {address} is connected.")
 hash_password = login(PORT)
 
 # generate public and private key
-public_key, private_key = assign_rsa_keys(str(PORT), hash_password)
+private_key, public_key = assign_rsa_keys(str(PORT), hash_password)
 
-threading.Thread(target=send, args=(client,)).start()
+# exchanging the public keys
+send_public_key(client, public_key)
+recvied_pub_key_ = recv_public_key(client)
+
+threading.Thread(target=send, args=(client, recvied_pub_key_)).start()
 threading.Thread(target=recv(client, PORT2, PORT), args=(client,)).start()

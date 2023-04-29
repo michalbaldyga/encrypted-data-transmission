@@ -1,6 +1,7 @@
 import socket
 import os
 from constants import *
+from crypto import create_session_key, encrypt
 
 
 def recv_file(filename: str, filesize: int, conn: socket.socket):
@@ -30,14 +31,22 @@ def send_file(filename: str, filesize: int, conn: socket.socket):
     conn.send("<END>".encode())
 
 
-def send(client: socket.socket):
+def send(client: socket.socket, recvied_public_key):
+    count_sends = 0
     while True:
+        # create a sesion key at the beggining of the session
+        if count_sends == 0:
+            session_key = create_session_key(recvied_public_key)
+            count_sends += 1
         option = input("1.Send message\n2.Send file\n3.Exit\nChoose option: ")
 
         # send message
         if option == "1":
             message = input("Message: ")
-            client.send(f"{MESSAGE_TAG}{SEPARATOR}{message}".encode())
+            # encrypt message mode = cbc
+            ciphertext, parameters = encrypt(message, "CBC", session_key)
+            client.send(f"{PARAMETERS_TAG}{SEPARATOR}{parameters}".encode())
+            client.send(f"{MESSAGE_TAG}{SEPARATOR}{ciphertext}".encode())
 
         # send file
         elif option == "2":
