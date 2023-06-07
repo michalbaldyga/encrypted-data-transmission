@@ -1,6 +1,5 @@
 import os
-
-from crypto import hash_local_key
+from cryptography.hazmat.primitives import hashes
 
 
 def login(client_id: int) -> bytes:
@@ -25,3 +24,9 @@ def login(client_id: int) -> bytes:
     return hash_password
 
 
+def hash_local_key(password: str) -> bytes:
+    chosen_hash = hashes.SHA256()
+    hasher = hashes.Hash(chosen_hash)
+    hasher.update(password.encode())
+    hash_password = hasher.finalize()
+    return hash_password
