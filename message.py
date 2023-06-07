@@ -1,10 +1,9 @@
 import socket
 import os
 from constants import *
-from crypto import create_session_key, encrypt
 
 
-def recv_file(filename: str, filesize: int, conn: socket.socket):
+def recv_file(filename: str, filesize: int, conn: socket.socket, private_key):
     """receiving the file from the socket and writing to the file stream"""
     with open(filename, "wb") as f:
         while True:
@@ -18,7 +17,7 @@ def recv_file(filename: str, filesize: int, conn: socket.socket):
                 f.write(bytes_read)
 
 
-def send_file(filename: str, filesize: int, conn: socket.socket):
+def send_file(filename: str, filesize: int, conn: socket.socket, recvied_public_key):
     """sending the file"""
     with open(filename, "rb") as f:
         while True:
@@ -32,21 +31,13 @@ def send_file(filename: str, filesize: int, conn: socket.socket):
 
 
 def send(client: socket.socket, recvied_public_key):
-    count_sends = 0
     while True:
-        # create a sesion key at the beggining of the session
-        if count_sends == 0:
-            session_key = create_session_key(recvied_public_key)
-            count_sends += 1
         option = input("1.Send message\n2.Send file\n3.Exit\nChoose option: ")
 
         # send message
         if option == "1":
             message = input("Message: ")
-            # encrypt message mode = cbc
-            ciphertext, parameters = encrypt(message, "CBC", session_key)
-            client.send(f"{PARAMETERS_TAG}{SEPARATOR}{parameters}".encode())
-            client.send(f"{MESSAGE_TAG}{SEPARATOR}{ciphertext}".encode())
+            client.send(f"{MESSAGE_TAG}{SEPARATOR}{message}".encode())
 
         # send file
         elif option == "2":
@@ -54,7 +45,7 @@ def send(client: socket.socket, recvied_public_key):
             filename = input("Filename: ")
             filesize = os.path.getsize(filename)
             client.send(f"{FILE_TAG}{SEPARATOR}{filename}{SEPARATOR}{filesize}".encode())
-            send_file(filename, filesize, client)
+            send_file(filename, filesize, client, recvied_public_key)
 
         # exit
         else:
@@ -62,7 +53,7 @@ def send(client: socket.socket, recvied_public_key):
             break
 
 
-def recv(client: socket.socket, sender_addr, receiver_addr):
+def recv(client: socket.socket, sender_addr, receiver_addr, private_key):
     # start receiving data from the socket
     with open(f"./{receiver_addr}/recv/logs.txt", "a") as f:
         while True:
@@ -79,4 +70,4 @@ def recv(client: socket.socket, sender_addr, receiver_addr):
                 f.flush()
                 filename = f"./{receiver_addr}/recv/files/{os.path.basename(data_info[1])}"
                 filesize = int(data_info[2])
-                recv_file(filename, filesize, client)
+                recv_file(filename, filesize, client, private_key)
