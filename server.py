@@ -29,5 +29,6 @@ private_key, public_key = assign_rsa_keys(str(PORT), hash_password)
 send_public_key(client, public_key)
 recvied_pub_key_ = recv_public_key(client)
 
+
 threading.Thread(target=send, args=(client, recvied_pub_key_)).start()
-threading.Thread(target=recv(client, PORT2, PORT), args=(client,)).start()
+threading.Thread(target=recv(client, PORT2, PORT, private_key), args=(client,)).start()
