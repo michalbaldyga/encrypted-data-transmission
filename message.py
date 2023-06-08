@@ -1,6 +1,8 @@
+import pickle
 import socket
 import os
 from constants import *
+from crypto import encrypt, decrypt
 
 
 def recv_file(filename: str, filesize: int, conn: socket.socket, private_key):
@@ -30,22 +32,28 @@ def send_file(filename: str, filesize: int, conn: socket.socket, recvied_public_
     conn.send("<END>".encode())
 
 
-def send(client: socket.socket, recvied_public_key):
+def send(client: socket.socket, session_key):
     while True:
         option = input("1.Send message\n2.Send file\n3.Exit\nChoose option: ")
 
         # send message
         if option == "1":
+            mode = input("Mode (CBC, ECB): ")
             message = input("Message: ")
-            client.send(f"{MESSAGE_TAG}{SEPARATOR}{message}".encode())
-
+            encrypted_message, params = encrypt(message.encode(), mode, session_key)
+            data = {
+                MESSAGE_TAG: encrypted_message,
+                PARAMETERS_TAG: params
+            }
+            serialized_data = pickle.dumps(data)
+            client.sendall(serialized_data)  # -> bytes
         # send file
         elif option == "2":
             # send the filename and filesize
             filename = input("Filename: ")
             filesize = os.path.getsize(filename)
             client.send(f"{FILE_TAG}{SEPARATOR}{filename}{SEPARATOR}{filesize}".encode())
-            send_file(filename, filesize, client, recvied_public_key)
+            send_file(filename, filesize, client, session_key)
 
         # exit
         else:
@@ -53,21 +61,38 @@ def send(client: socket.socket, recvied_public_key):
             break
 
 
-def recv(client: socket.socket, sender_addr, receiver_addr, private_key):
+def recv(client: socket.socket, sender_addr, receiver_addr, session_key):
     # start receiving data from the socket
     with open(f"./{receiver_addr}/recv/logs.txt", "a") as f:
+        # params_not_set = True
         while True:
-            received = client.recv(BUFFER_SIZE).decode()
-            data_info = received.split(SEPARATOR)
+            '''
+            # if the params are not set you can not decode the message
+            while params_not_set:
+                received = client.recv(BUFFER_SIZE)
+                try:
+                    params = pickle.loads(received)
+                    params_not_set = False
+                except pickle.UnpicklingError as e:
+                    continue
+            '''
+            received = client.recv(BUFFER_SIZE)
+            # data = dict ( TAG : encrypted_data, PARAM_TAG : dict(param)}
+            data = pickle.loads(received)
+            splited_data = list(data.items())
             # recv message
-            if data_info[0] == MESSAGE_TAG:
-                # print("Message: " + data_info[1])
-                f.write(f"New message from {sender_addr}: " + data_info[1] + "\n")
+            if splited_data[CONTENT][TAG] == MESSAGE_TAG:
+                message = decrypt(splited_data[CONTENT][DATA],
+                                  session_key,
+                                  splited_data[PARAMS][TYPE]['MODE'],
+                                  splited_data[PARAMS][TYPE]['IV'])
+                f.write(f"New message from {sender_addr}: " + message + "\n")
                 f.flush()
             # recv file
-            elif data_info[0] == FILE_TAG:
-                f.write(f"New file from {sender_addr}: " + data_info[1])
+            elif splited_data[CONTENT][TAG] == FILE_TAG:
+
+                f.write(f"New file from {sender_addr}: " + splited_data[CONTENT][DATA])
                 f.flush()
-                filename = f"./{receiver_addr}/recv/files/{os.path.basename(data_info[1])}"
-                filesize = int(data_info[2])
-                recv_file(filename, filesize, client, private_key)
+                filename = f"./{receiver_addr}/recv/files/{os.path.basename(list(data)[1])}"
+                # filesize = int(data_info[2])
+                # recv_file(filename, filesize, client, session_key)

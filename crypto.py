@@ -1,3 +1,5 @@
+import pickle
+
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import padding, hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding as asy_padding
@@ -40,51 +42,43 @@ def encrypt(data, _mode, _session_key):
     _iv = None
     if _mode == 'CBC':
         # random 256 - bit iv
-        _iv = os.urandom(32)
-        cipher = Cipher(algorithms.AES256(_session_key), modes.CBC(_iv))
+        _iv = os.urandom(16)  # -> bytes
+        cipher = Cipher(algorithms.AES(_session_key), modes.CBC(_iv))
     else:
-        cipher = Cipher(algorithms.AES256(_session_key), modes.ECB())
-
+        cipher = Cipher(algorithms.AES(_session_key), modes.ECB())
     encryptor = cipher.encryptor()
     # Encrypt the plaintext and get the associated ciphertext.
     _ciphertext = encryptor.update(padded_data) + encryptor.finalize()
 
-    return _iv, _ciphertext, _session_key, _mode
+    params = {"MODE": _mode, "IV": _iv}
+
+    return _ciphertext, params
 
 
-def decrypt(_private_key, _ciphertext, _session_key, _mode, _iv=None):
-    # decryption of the session key using private key
-    _session_key = _private_key.decrypt(
-        _session_key,
-        asy_padding.OAEP(
-            mgf=asy_padding.MGF1(algorithm=hashes.SHA256()),
-            algorithm=hashes.SHA256(),
-            label=None
-        )
-    )
+def decrypt(_ciphertext, _session_key, _mode, _iv):
     if _mode == 'CBC':
-        cipher = Cipher(algorithms.AES256(_session_key), modes.CBC(_iv))
+        cipher = Cipher(algorithms.AES(_session_key), modes.CBC(_iv))
     else:
-        cipher = Cipher(algorithms.AES256(_session_key), modes.ECB())
-
+        cipher = Cipher(algorithms.AES(_session_key), modes.ECB())
     decryptor = cipher.decryptor()
     # Encrypt the plaintext and get the associated ciphertext.
     data = decryptor.update(_ciphertext) + decryptor.finalize()
 
     # returning our block of sended_data without padding
     unpadder = padding.PKCS7(128).unpadder()
-    byte_data = unpadder.update(data) + unpadder.finalize()
+    bytes_message = unpadder.update(data) + unpadder.finalize()  # -> bytes
+    message = bytes_message.decode()  # -> string
+
+    return message
 
 
 # -------------- SESSION KEY ---------------------------------------------
-def create_session_key(receiver_public_key):
-    # session key
+def create_session_key():
     session_key = os.urandom(32)  # -> bytes
-    encrypted_session_key = encrypt_session_key(receiver_public_key, session_key)
-    return encrypted_session_key
+    return session_key
 
 
-def encrypt_session_key(receiver_public_key, session_key):
+def encrypt_session_key(receiver_public_key, session_key) -> bytes:
     encrypted_session_key = receiver_public_key.encrypt(
         session_key,  # -> bytes
         asy_padding.OAEP(
@@ -109,7 +103,8 @@ def decrypt_session_key(private_key, encrypted_session_key):
     return _session_key
 
 
-def send_session_key(client, encrypted_session_key):
+def send_session_key(client, receiver_public_key, session_key):
+    encrypted_session_key = encrypt_session_key(receiver_public_key, session_key)
     client.sendall(encrypted_session_key)
 
 
