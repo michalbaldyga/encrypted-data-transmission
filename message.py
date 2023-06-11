@@ -23,8 +23,10 @@ def send_file(filename: str, filesize: int, conn: socket.socket, recvied_public_
     """sending the file"""
     with open(filename, "rb") as f:
         while True:
+            # TODO divide the filesize into max ( BUFFER_SIZE ) parts and encrypt them
             # read the bytes from the file
             bytes_read = f.read(BUFFER_SIZE)
+
             if not bytes_read:
                 # file transmitting is done
                 break
