@@ -1,5 +1,7 @@
+import base64
 import pickle
 
+from cryptography.fernet import Fernet
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import padding, hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding as asy_padding
@@ -11,65 +13,54 @@ from constants import PATH_TO_PRIVATE_KEY, PATH_TO_PUBLIC_KEY
 import os
 
 
-def encrypt_cipher_param(_mode, _iv, _used_algorithm, _key_size, _block_size):
-    """
-    _mode = _public_key.encrypt(
-        _mode.decode(),
-        padding.OAEP(
-            mgf=padding.MGF1(algorithm=hashes.SHA256()),
-            algorithm=hashes.SHA256(),
-            label=None
-        )
-    )
-    _iv = _public_key.encrypt(
-        _iv.decode(),
-        padding.OAEP(
-            mgf=padding.MGF1(algorithm=hashes.SHA256()),
-            algorithm=hashes.SHA256(),
-            label=None
-        )
-    )
-    """
-    pass
+def encrypt_params(params, session_key):
+    encoded_key = base64.urlsafe_b64encode(session_key)
+    cipher = Fernet(encoded_key)
+    serialized_params = pickle.dumps(params)
+    encrypted_params = cipher.encrypt(serialized_params)
+    return encrypted_params
+
+
+def decrypt_params(encrypted_params, session_key) -> dict:
+    encoded_key = base64.urlsafe_b64encode(session_key)
+    cipher = Fernet(encoded_key)
+    decrypted_params = cipher.decrypt(encrypted_params)
+    deserialized_params = pickle.loads(decrypted_params)
+    return deserialized_params
 
 
 # sended_data -> file/text/png
 # mode -> CBC/ECB
-def encrypt(data, _mode, _session_key):
+def encrypt(data, params):
     # appends the bytes to make the sended_data the same size as block size (always 128 bytes for AES)
-    padder = padding.PKCS7(128).padder()
+    padder = params["PADDER"].padder()
     padded_data = padder.update(data) + padder.finalize()
-    _iv = None
-    if _mode == 'CBC':
-        # random 256 - bit iv
-        _iv = os.urandom(16)  # -> bytes
-        cipher = Cipher(algorithms.AES(_session_key), modes.CBC(_iv))
+    _iv = params["IV"]
+    algorithm = params["ALGORITHM"]
+    if params["MODE"] == "CBC":
+        cipher = Cipher(algorithm, modes.CBC(_iv))
     else:
-        cipher = Cipher(algorithms.AES(_session_key), modes.ECB())
+        cipher = Cipher(algorithm, modes.ECB())
     encryptor = cipher.encryptor()
     # Encrypt the plaintext and get the associated ciphertext.
     _ciphertext = encryptor.update(padded_data) + encryptor.finalize()
-
-    params = {"MODE": _mode, "IV": _iv}
-
-    return _ciphertext, params
+    return _ciphertext
 
 
-def decrypt(_ciphertext, _session_key, _mode, _iv):
-    if _mode == 'CBC':
-        cipher = Cipher(algorithms.AES(_session_key), modes.CBC(_iv))
+def decrypt(_ciphertext, params):
+    algorithm = params["ALGORITHM"]
+    _iv = params["IV"]
+    if params["MODE"] == "CBC":
+        cipher = Cipher(algorithm, modes.CBC(_iv))
     else:
-        cipher = Cipher(algorithms.AES(_session_key), modes.ECB())
+        cipher = Cipher(algorithm, modes.ECB())
     decryptor = cipher.decryptor()
     # Encrypt the plaintext and get the associated ciphertext.
     data = decryptor.update(_ciphertext) + decryptor.finalize()
-
     # returning our block of sended_data without padding
-    unpadder = padding.PKCS7(128).unpadder()
+    unpadder = params["PADDER"].unpadder()
     bytes_message = unpadder.update(data) + unpadder.finalize()  # -> bytes
-    message = bytes_message.decode()  # -> string
-
-    return message
+    return bytes_message
 
 
 # -------------- SESSION KEY ---------------------------------------------
