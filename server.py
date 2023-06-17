@@ -27,7 +27,7 @@ private_key, public_key = assign_rsa_keys(str(PORT), hash_password)
 
 # exchanging the public keys
 send_public_key(client, public_key)
-recvied_pub_key_ = recv_public_key(client)
+received_pub_key_ = recv_public_key(client)
 
 # receive the session key -> one for transmission
 session_key = recv_session_key(client, private_key)

@@ -4,35 +4,31 @@ import os
 
 from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives.ciphers import algorithms
-from tqdm import tqdm
 
 from constants import *
 from crypto import encrypt, decrypt, encrypt_params, decrypt_params
 
 
 def recv_file(filename: str, filesize: int, conn: socket.socket, params):
-    """ Data transfer """
-    bar = tqdm(range(filesize), f"Receiving {filename}", unit="B", unit_scale=True, unit_divisor=BUFFER_SIZE)
-
     """receiving the file from the socket and writing to the file stream"""
     with open(filename, "wb") as f:
         while True:
             bytes_read = conn.recv(BUFFER_SIZE)
             if bytes_read.endswith(END_TAG.encode()):
                 # file transmitting is done
-                f.write(bytes_read[:-len(END_TAG)])
+                bytearray_obj = bytearray(bytes_read)
+                bytearray_obj = bytearray_obj[:-len(END_TAG)]
+                modified_bytes = bytes(bytearray_obj)
+                decrypted_data = decrypt(modified_bytes, params)
+                f.write(decrypted_data)
                 f.flush()
                 break
             else:
                 decrypted_data = decrypt(bytes_read, params)
                 f.write(decrypted_data)
-                bar.update(len(bytes_read))
 
 
 def send_file(filename: str, filesize: int, conn: socket.socket, params):
-    """ Data transfer """
-    bar = tqdm(range(filesize), f"Receiving {filename}", unit="B", unit_scale=True, unit_divisor=BUFFER_SIZE)
-
     """sending the file"""
     with open(filename, "rb") as f:
         while True:
@@ -41,10 +37,10 @@ def send_file(filename: str, filesize: int, conn: socket.socket, params):
             if not bytes_read:
                 # file transmitting is done
                 break
+
             encrypted_data = encrypt(bytes_read, params)
             conn.sendall(encrypted_data)
-            bar.update(len(bytes_read))
-    conn.send("<END>".encode())
+        conn.send("<END>".encode())
 
 
 def send(client: socket.socket, session_key):
