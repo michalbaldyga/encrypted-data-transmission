@@ -69,6 +69,7 @@ def send(client: socket.socket, session_key):
             }
             serialized_data = pickle.dumps(data)
             client.sendall(serialized_data)  # -> bytes
+            print("[+] Encrypted message sent.")
 
         # Send file
         elif option == "2":
@@ -88,6 +89,7 @@ def send(client: socket.socket, session_key):
             client.send(serialized_data)
             # Sending the content of the file
             send_file(filename, filesize, client, params)
+            print("[+] Encrypted file sent.")
 
         # Exit
         else:
@@ -111,6 +113,7 @@ def recv(client: socket.socket, sender_addr, receiver_addr, session_key):
                                   decrypt_params(splited_data[PARAMS][TYPE], session_key))
                 f.write(f"New message from {sender_addr}: " + message.decode() + "\n")
                 f.flush()
+                print("\n[+] New message received.")
 
             # Recv file
             elif splited_data[CONTENT][TAG] == FILENAME_TAG:
@@ -119,3 +122,4 @@ def recv(client: socket.socket, sender_addr, receiver_addr, session_key):
                 filename = f"./{receiver_addr}/recv/files/{os.path.basename(splited_data[CONTENT][DATA])}"
                 filesize = int(splited_data[SIZE][DATA])
                 recv_file(filename, filesize, client, decrypt_params(splited_data[PARAMS2][TYPE], session_key))
+                print("\n[+] New file received.")

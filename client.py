@@ -18,16 +18,22 @@ print("[+] Connected.")
 
 # login/registration
 hash_password = login(PORT2)
+print("[+] User logged in.")
 
 # Generate RSA public and private key for client
 private_key, public_key = assign_rsa_keys(str(PORT2), hash_password)
+print("[+] RSA keys generated.")
 
 # Receive from the server the RSA public key
 received_pub_key_ = recv_public_key(client)
+print("[+] Public key received.")
 
 # Create, encrypt using received public key and send session key to the server
 session_key = create_session_key()
+print("[+] Session key generated.")
+
 send_session_key(client, received_pub_key_, session_key)
+print("[+] Session key sent.")
 
 # create threads for receiving and sending messages
 threading.Thread(target=send, args=(client, session_key)).start()
