@@ -15,15 +15,17 @@ def recv_file(filename: str, filesize: int, conn: socket.socket, params):
         while True:
             bytes_read = conn.recv(BUFFER_SIZE)
             if bytes_read.endswith(END_TAG.encode()):
-                # file transmitting is done
+                # Remove the END_TAG before decrypting and saving the received bytes
                 bytearray_obj = bytearray(bytes_read)
                 bytearray_obj = bytearray_obj[:-len(END_TAG)]
                 modified_bytes = bytes(bytearray_obj)
+                # Decrypt received bytes without END_TAG and save it
                 decrypted_data = decrypt(modified_bytes, params)
                 f.write(decrypted_data)
                 f.flush()
                 break
             else:
+                # Decrypt received bytes and save it
                 decrypted_data = decrypt(bytes_read, params)
                 f.write(decrypted_data)
 
@@ -32,12 +34,12 @@ def send_file(filename: str, filesize: int, conn: socket.socket, params):
     """sending the file"""
     with open(filename, "rb") as f:
         while True:
-            # read the bytes from the file
+            # Read the bytes from the file
             bytes_read = f.read(BUFFER_SIZE)
             if not bytes_read:
                 # file transmitting is done
                 break
-
+            # Encrypted read bytes
             encrypted_data = encrypt(bytes_read, params)
             conn.sendall(encrypted_data)
         conn.send("<END>".encode())
@@ -47,6 +49,7 @@ def send(client: socket.socket, session_key):
     while True:
         option = input("1.Send message\n2.Send file\n3.Exit\nChoose option: ")
         mode = ""
+        # Creating a dictionary with the parameters for encrypt/decrypt
         params = {"MODE": mode,
                   "IV": os.urandom(16),
                   "PADDER": padding.PKCS7(128),
@@ -57,6 +60,7 @@ def send(client: socket.socket, session_key):
             params["MODE"] = mode
             message = input("Message: ")
             encrypted_message = encrypt(message.encode(), params)
+            # Creating a dictionary with encrypted message and encrypted parameters
             data = {
                 MESSAGE_TAG: encrypted_message,
                 PARAMETERS_TAG: encrypt_params(params, session_key)
@@ -70,13 +74,16 @@ def send(client: socket.socket, session_key):
             # send the filename and filesize
             filename = input("Filename: ")
             filesize = os.path.getsize(filename)
+            # Creating a dictionary with filename, filesize and encrypted parameters
             data = {
                 FILENAME_TAG: filename,
                 SIZE_TAG: filesize,
                 PARAMETERS_TAG: encrypt_params(params, session_key)
             }
             serialized_data = pickle.dumps(data)
+            # First sending serilized dictionary with file info and params
             client.send(serialized_data)
+            # Sending the content of the file
             send_file(filename, filesize, client, params)
         # exit
         else:

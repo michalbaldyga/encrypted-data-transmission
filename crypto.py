@@ -3,16 +3,17 @@ import pickle
 
 from cryptography.fernet import Fernet
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import padding, hashes, serialization
+from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding as asy_padding
 from cryptography.hazmat.primitives.asymmetric import rsa
-from cryptography.hazmat.primitives.ciphers import algorithms, modes
+from cryptography.hazmat.primitives.ciphers import modes
 from cryptography.hazmat.primitives.ciphers.base import Cipher
 
 from constants import PATH_TO_PRIVATE_KEY, PATH_TO_PUBLIC_KEY
 import os
 
 
+# -------- PARAMS -------------------
 def encrypt_params(params, session_key):
     encoded_key = base64.urlsafe_b64encode(session_key)
     cipher = Fernet(encoded_key)
@@ -59,25 +60,28 @@ def encrypt(data, params):
 
 ''' 
 
-Decrypt the data using params send and stored in the encrypted dictionary 
-    Input : data -> bytes, params -> dict
-    Output : ciphertext -> bytes
+Decrypt the ciphertext using params received and stored in the encrypted dictionary 
+    Input : ciphertext -> bytes, params -> dict
+    Output : data -> bytes
 
 '''
+
+
 def decrypt(_ciphertext, params):
+    # Create cipher for encryption
     algorithm = params["ALGORITHM"]
     _iv = params["IV"]
     if params["MODE"] == "CBC":
         cipher = Cipher(algorithm, modes.CBC(_iv))
     else:
         cipher = Cipher(algorithm, modes.ECB())
+    # Create decryptor and decrypt padded ciphertext
     decryptor = cipher.decryptor()
-    # Encrypt the plaintext and get the associated ciphertext.
     data = decryptor.update(_ciphertext) + decryptor.finalize()
-    # returning our block of sended_data without padding
+    # Remove padding from  decrypted data
     unpadder = params["PADDER"].unpadder()
-    bytes_message = unpadder.update(data) + unpadder.finalize()  # -> bytes
-    return bytes_message
+    data = unpadder.update(data) + unpadder.finalize()
+    return data
 
 
 # -------------- SESSION KEY ---------------------------------------------
