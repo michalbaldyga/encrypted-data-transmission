@@ -1,7 +1,7 @@
 import socket
 import threading
 from constants import HOST, PORT, PORT2
-from crypto import assign_rsa_keys, send_public_key, recv_public_key, create_session_key, send_session_key
+from crypto import assign_rsa_keys, recv_public_key, create_session_key, send_session_key
 from message import send, recv
 from utils import login
 
@@ -29,5 +29,6 @@ received_pub_key_ = recv_public_key(client)
 session_key = create_session_key()
 send_session_key(client, received_pub_key_, session_key)
 
+# create threads for receiving and sending messages
 threading.Thread(target=send, args=(client, session_key)).start()
 threading.Thread(target=recv, args=(client, PORT, PORT2, session_key,)).start()
