@@ -19,14 +19,13 @@ print("[+] Connected.")
 # login/registration
 hash_password = login(PORT2)
 
-# generate public and private key
+# Generate RSA public and private key for client
 private_key, public_key = assign_rsa_keys(str(PORT2), hash_password)
 
-# exchanging the public keys
-send_public_key(client, public_key)
+# Receive from the server the RSA public key
 received_pub_key_ = recv_public_key(client)
 
-# create and send session key -> one for transmission
+# Create, encrypt using received public key and send session key to the server
 session_key = create_session_key()
 send_session_key(client, received_pub_key_, session_key)
 

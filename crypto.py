@@ -29,24 +29,41 @@ def decrypt_params(encrypted_params, session_key) -> dict:
     return deserialized_params
 
 
-# sended_data -> file/text/png
-# mode -> CBC/ECB
+''' 
+
+Encrypt the data using params send and stored in the encrypted dictionary 
+    Input : data -> bytes, params -> dict
+    Output : ciphertext -> bytes
+    
+'''
+
+
 def encrypt(data, params):
-    # appends the bytes to make the sended_data the same size as block size (always 128 bytes for AES)
+    # Add padding to data
     padder = params["PADDER"].padder()
     padded_data = padder.update(data) + padder.finalize()
+
+    # Create cipher for encryption
     _iv = params["IV"]
     algorithm = params["ALGORITHM"]
     if params["MODE"] == "CBC":
         cipher = Cipher(algorithm, modes.CBC(_iv))
     else:
         cipher = Cipher(algorithm, modes.ECB())
+    # Create encryptor and encrypt padded data
     encryptor = cipher.encryptor()
-    # Encrypt the plaintext and get the associated ciphertext.
     _ciphertext = encryptor.update(padded_data) + encryptor.finalize()
+
     return _ciphertext
 
 
+''' 
+
+Decrypt the data using params send and stored in the encrypted dictionary 
+    Input : data -> bytes, params -> dict
+    Output : ciphertext -> bytes
+
+'''
 def decrypt(_ciphertext, params):
     algorithm = params["ALGORITHM"]
     _iv = params["IV"]
